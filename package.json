@@ -1,0 +1,15 @@
+{
+  "name": "naunau-api",
+  "version": "1.0.0",
+  "description": "AN SOS app that's very easy to use",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "naunau_api"
+  },
+  "author": "Adetunji Oyebanji, Kelechi Nwosu",
+  "license": "ISC"
+}
