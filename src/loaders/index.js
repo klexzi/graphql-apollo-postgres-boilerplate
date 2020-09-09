@@ -1,3 +1,8 @@
-import * as user from './user';
+import DataLoader from 'dataloader';
+import * as userLoader from './user';
 
-export { user };
+const setupLoaders = () => ({
+  user: new DataLoader((keys) => userLoader.batchUsers(keys)),
+});
+
+export default setupLoaders;

@@ -16,6 +16,7 @@ import {
   UserSignupInputType,
   UserTokenType,
 } from '../types';
+import { User } from '../models';
 
 const createToken = async (user, secret, expiresIn) => {
   const { id, email, username, role } = user;
@@ -28,24 +29,24 @@ export default {
   Query: {
     users: {
       type: new GraphQLList(UserType),
-      resolve: async (parent, args, { models }) => {
-        return models.user.findAll();
+      resolve: async () => {
+        return User.findAll();
       },
     },
     user: {
       type: UserType,
       args: { id: { type: new GraphQLNonNull(GraphQLInt) } },
-      resolve: async (parent, { id }, { models }) => {
-        return models.user.findById(id);
+      resolve: async (parent, { id }) => {
+        return User.findById(id);
       },
     },
     me: {
       type: UserType,
-      resolve: async (parent, args, { models, me }) => {
+      resolve: async (parent, args, { me }) => {
         if (!me) {
           return null;
         }
-        return models.user.findById(me.id);
+        return User.findById(me.id);
       },
     },
   },
@@ -57,9 +58,9 @@ export default {
       resolve: async (
         parent,
         { input: { username, email, password } },
-        { models, secret },
+        { secret },
       ) => {
-        const user = await models.user.create({
+        const user = await User.create({
           username,
           email,
           password,
@@ -71,12 +72,8 @@ export default {
     signIn: {
       type: UserTokenType,
       args: { input: { type: UserLoginInputType } },
-      resolve: async (
-        parent,
-        { input: { login, password } },
-        { models, secret },
-      ) => {
-        const user = await models.user.findByLogin(login);
+      resolve: async (parent, { input: { login, password } }, { secret }) => {
+        const user = await User.findByLogin(login);
 
         if (!user) {
           throw new UserInputError(
@@ -99,8 +96,8 @@ export default {
       args: { username: { type: new GraphQLNonNull(GraphQLString) } },
       resolve: combineResolvers(
         isAuthenticated,
-        async (parent, { username }, { models, me }) => {
-          const user = await models.user.findById(me.id);
+        async (parent, { username }, { me }) => {
+          const user = await User.findById(me.id);
           return user.update({ username });
         },
       ),
@@ -108,16 +105,16 @@ export default {
     deleteUser: {
       type: GraphQLBoolean,
       args: { id: { type: new GraphQLNonNull(GraphQLInt) } },
-      resolve: combineResolvers(isAdmin, async (parent, { id }, { models }) => {
-        return models.user.destroy({
+      resolve: combineResolvers(isAdmin, async (parent, { id }) => {
+        return User.destroy({
           where: { id },
         });
       }),
     },
 
     // User: {
-    //   messages: async (user, args, { models }) => {
-    //     return models.Message.findAll({
+    //   messages: async (user, args) => {
+    //     return Message.findAll({
     //       where: {
     //         userId: user.id,
     //       },

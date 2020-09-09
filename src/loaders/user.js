@@ -1,5 +1,7 @@
-export const batchUsers = async (keys, models) => {
-  const users = await models.User.findAll({
+import { User } from '../models';
+
+export const batchUsers = async (keys) => {
+  const users = await User.findAll({
     where: {
       id: {
         $in: keys,

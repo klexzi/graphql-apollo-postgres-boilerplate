@@ -3,13 +3,11 @@ import cors from 'cors';
 import morgan from 'morgan';
 import http from 'http';
 import jwt from 'jsonwebtoken';
-import DataLoader from 'dataloader';
 import express from 'express';
 import { ApolloServer, AuthenticationError } from 'apollo-server-express';
 
 import schema from './schema';
-import models, { sequelize } from './models';
-import { user as userLoader } from './loaders';
+import setupLoaders from './loaders';
 
 const app = express();
 
@@ -27,20 +25,6 @@ const getMe = async (req) => {
     }
   }
   return null;
-};
-const createUsersWithMessages = async () => {
-  await models.user.create({
-    username: 'johnny',
-    email: 'johnny@mail.com',
-    password: 'johnny123',
-    role: 'ADMIN',
-  });
-
-  await models.user.create({
-    username: 'janet',
-    email: 'janet@mail.com',
-    password: 'janet123',
-  });
 };
 
 const server = new ApolloServer({
@@ -62,10 +46,7 @@ const server = new ApolloServer({
   context: async ({ req, connection }) => {
     if (connection) {
       return {
-        models,
-        loaders: {
-          user: new DataLoader((keys) => userLoader.batchUsers(keys, models)),
-        },
+        loaders: setupLoaders(),
       };
     }
 
@@ -73,12 +54,9 @@ const server = new ApolloServer({
       const me = await getMe(req);
 
       return {
-        models,
         me,
         secret: process.env.SECRET,
-        loaders: {
-          user: new DataLoader((keys) => userLoader.batchUsers(keys, models)),
-        },
+        loaders: setupLoaders(),
       };
     }
 
@@ -91,16 +69,8 @@ server.applyMiddleware({ app, path: '/graphql' });
 const httpServer = http.createServer(app);
 server.installSubscriptionHandlers(httpServer);
 
-const isTest = !!process.env.TEST_DATABASE;
-const isProduction = !!process.env.DATABASE_URL;
 const port = process.env.PORT || 8800;
 
-sequelize.sync({ force: isTest || isProduction }).then(async () => {
-  if (isTest || isProduction) {
-    createUsersWithMessages(new Date());
-  }
-
-  httpServer.listen({ port }, () => {
-    console.log(`Apollo Server on http://localhost:${port}/graphql`);
-  });
+httpServer.listen({ port }, () => {
+  console.log(`Apollo Server on http://localhost:${port}/graphql`);
 });
