@@ -1,5 +1,6 @@
 import { Model } from 'sequelize';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 export default (sequelize, DataTypes) => {
   class User extends Model {
@@ -35,6 +36,13 @@ export default (sequelize, DataTypes) => {
     validatePassword = async (password) => {
       return bcrypt.compare(password, this.password);
     };
+
+    createToken = (secret, expiresIn = '30m') => {
+      const { id, email, username, role } = this;
+      return jwt.sign({ id, email, username, role }, secret, {
+        expiresIn,
+      });
+    };
   }
   User.init(
     {
@@ -59,12 +67,24 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-          notEmpty: true,
+          notNull: true,
           len: [7, 42],
         },
       },
+      hasPassword: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
       role: {
         type: DataTypes.STRING,
+      },
+      facebookID: {
+        type: DataTypes.STRING,
+        unique: true,
+      },
+      googleID: {
+        type: DataTypes.STRING,
+        unique: true,
       },
     },
     {
@@ -74,8 +94,10 @@ export default (sequelize, DataTypes) => {
   );
 
   User.beforeCreate(async (currUser) => {
-    // eslint-disable-next-line no-param-reassign
-    currUser.password = await currUser.generatePasswordHash();
+    if (currUser.password) {
+      // eslint-disable-next-line no-param-reassign
+      currUser.password = await currUser.generatePasswordHash();
+    }
   });
   return User;
 };

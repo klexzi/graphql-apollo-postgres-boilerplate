@@ -14,7 +14,11 @@ module.exports = {
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
+      },
+      hasPassword: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
       },
       email: {
         type: Sequelize.STRING,
@@ -22,6 +26,12 @@ module.exports = {
         allowNull: false,
       },
       role: {
+        type: Sequelize.STRING,
+      },
+      facebookID: {
+        type: Sequelize.STRING,
+      },
+      googleID: {
         type: Sequelize.STRING,
       },
       createdAt: {

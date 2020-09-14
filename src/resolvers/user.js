@@ -1,6 +1,5 @@
-import jwt from 'jsonwebtoken';
 import { combineResolvers } from 'graphql-resolvers';
-import { AuthenticationError, UserInputError } from 'apollo-server';
+import { AuthenticationError } from 'apollo-server';
 
 import {
   GraphQLBoolean,
@@ -17,13 +16,6 @@ import {
   UserTokenType,
 } from '../types';
 import { User } from '../models';
-
-const createToken = async (user, secret, expiresIn) => {
-  const { id, email, username, role } = user;
-  return jwt.sign({ id, email, username, role }, secret, {
-    expiresIn,
-  });
-};
 
 export default {
   Query: {
@@ -64,9 +56,10 @@ export default {
           username,
           email,
           password,
+          hasPassword: true,
         });
 
-        return { token: createToken(user, secret, '30m') };
+        return { token: user.createToken(secret, '30m') };
       },
     },
     signIn: {
@@ -76,18 +69,16 @@ export default {
         const user = await User.findByLogin(login);
 
         if (!user) {
-          throw new UserInputError(
-            'No user found with this login credentials.',
-          );
+          throw new AuthenticationError('Invalid email or password.');
         }
 
         const isValid = await user.validatePassword(password);
 
-        if (!isValid) {
-          throw new AuthenticationError('Invalid password.');
+        if (!isValid || !user.hasPassword) {
+          throw new AuthenticationError('Invalid email or password.');
         }
 
-        return { token: createToken(user, secret, '30m') };
+        return { token: user.createToken(secret) };
       },
     },
 
@@ -113,8 +104,8 @@ export default {
     },
 
     // User: {
-    //   messages: async (user, args) => {
-    //     return Message.findAll({
+    //   videos: async (user, args) => {
+    //     return Video.findAll({
     //       where: {
     //         userId: user.id,
     //       },

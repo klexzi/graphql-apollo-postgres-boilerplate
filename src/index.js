@@ -5,15 +5,19 @@ import http from 'http';
 import jwt from 'jsonwebtoken';
 import express from 'express';
 import { ApolloServer, AuthenticationError } from 'apollo-server-express';
+import passport from 'passport';
 
 import schema from './schema';
 import setupLoaders from './loaders';
+import initPassport from './passport';
 
 const app = express();
 
 app.use(cors());
 
 app.use(morgan('dev'));
+
+initPassport(passport, app);
 
 const getMe = async (req) => {
   const token = req.headers['x-token'];
@@ -43,7 +47,7 @@ const server = new ApolloServer({
       message,
     };
   },
-  context: async ({ req, connection }) => {
+  context: async ({ req, res, connection }) => {
     if (connection) {
       return {
         loaders: setupLoaders(),
@@ -54,7 +58,10 @@ const server = new ApolloServer({
       const me = await getMe(req);
 
       return {
+        req,
+        res,
         me,
+        passport,
         secret: process.env.SECRET,
         loaders: setupLoaders(),
       };
